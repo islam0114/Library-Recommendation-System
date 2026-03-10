@@ -11,7 +11,7 @@ const ADMIN_STUDENTS=[{id:"STD-001",libId:"LIB-20411",name:"Ahmed Youssef",dept:
 const MONTHLY=[{m:"Sep",borrows:58,returns:51},{m:"Oct",borrows:71,returns:65},{m:"Nov",borrows:85,returns:79},{m:"Dec",borrows:63,returns:58},{m:"Jan",borrows:94,returns:87},{m:"Feb",borrows:108,returns:99},{m:"Mar",borrows:124,returns:112}];
 const DEPT_STATS=[{dept:"Engineering",books:842,color:"#f97316"},{dept:"Medicine",books:671,color:"#ef4444"},{dept:"CS",books:589,color:"#3b82f6"},{dept:"Pharmacy",books:423,color:"#8b5cf6"},{dept:"Science",books:398,color:"#06b6d4"},{dept:"Commerce",books:312,color:"#22c55e"}];
 
-const LS={get:(k,fb)=>{try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):fb;}catch{return fb;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
+const LS={get:(k,fb)=>{try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):fb;}catch(e){return fb;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 const ANN_KEY="bt_ann_v5";const REQ_KEY="bt_req_v5";const DEMO_KEY="bt_demo_v5";
 const wlKey=lid=>`bt_wl_v5_${lid}`;const notifKey=lid=>`bt_notif_v5_${lid}`;
 const getAnns=()=>LS.get(ANN_KEY,[]);const saveAnns=a=>LS.set(ANN_KEY,a);
@@ -64,8 +64,8 @@ function PortalCard({th,title,desc,btn,accent,icon,onClick,isAr}){const[hov,setH
 function BookCard({bk,th,sc,onClick,wishlist,onToggleWishlist,studentReqStatus}){
   const[hov,setHov]=useState(false);
   const s=sc(bk.status);const dc=deptColor(bk.dept);
-  const inWl=wishlist?.includes(bk.id);
-  const sst=studentReqStatus?.(bk.id);
+  const inWl=wishlist?wishlist.includes(bk.id):false;
+  const sst=studentReqStatus?studentReqStatus(bk.id):null;
   return(<div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClick} style={{background:hov?th.card2||th.card:th.card,borderRadius:13,overflow:"hidden",border:`1px solid ${hov?dc+"55":th.border}`,cursor:"pointer",boxShadow:hov?`0 14px 36px ${dc}22`:"0 2px 8px rgba(0,0,0,0.25)",transform:hov?"translateY(-5px) scale(1.02)":"translateY(0)",transition:"all 0.3s cubic-bezier(0.34,1.2,0.64,1)"}}>
     <Cover colors={bk.cover} h={152}>
       <div style={{position:"absolute",top:7,left:7,background:s.c+"22",color:s.c,border:`1px solid ${s.c}44`,fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",textTransform:"uppercase"}}>{s.label}</div>
@@ -213,6 +213,104 @@ function Landing({th,t,tn,setTn,lang,setLang,isAr,onStudent,onAdmin}){
     <footer style={{position:"relative",zIndex:1,borderTop:`1px solid ${th.border}`,padding:"16px 36px",display:"flex",justifyContent:"center"}}><p style={{fontSize:11,color:th.muted,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{t.footer}</p></footer>
   </div>);}
 
+function BookDetail({th,t,isAr,book,sc,wishlist,toggleWishlist,studentReqStatus,requests,sendBorrowRequest,reqFlash,onBack,daysLeft,daysColor}){
+  const s=sc(book.status);const dc=deptColor(book.dept);
+  const sst=studentReqStatus(book.id);
+  const inWl=wishlist.includes(book.id);
+  const activeReq=requests.find(r=>r.bid===book.id&&r.status==="approved"&&!r.returnDate);
+  const days=activeReq?daysLeft(activeReq.dueDateISO):null;
+  const justFlashed=reqFlash===book.id;
+  const btnLabel=sst==="approved"?t.reqBorrowed:sst==="pending"?t.reqPending:justFlashed?`✓ ${t.reqSent}`:t.borrow;
+  const btnDisabled=sst==="approved"||sst==="pending"||book.status==="coming_soon";
+  return(
+    <div style={{padding:"24px",maxWidth:820,margin:"0 auto",animation:"fadeIn 0.4s ease"}}>
+      <button onClick={onBack} className="btn" style={{display:"flex",alignItems:"center",gap:7,border:`1px solid ${th.border}`,borderRadius:9,padding:"7px 13px",color:th.sub,fontSize:12,marginBottom:20,flexDirection:isAr?"row-reverse":"row"}}><Ic p={P.back} s={13}/>{isAr?"رجوع":"Back"}</button>
+      <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:28}}>
+        <div>
+          <div style={{borderRadius:14,overflow:"hidden",border:`2px solid ${dc}44`,boxShadow:`0 18px 48px ${book.cover[1]}40`,animation:"float 4s ease infinite"}}><Cover colors={book.cover} h={320}/></div>
+          {days!==null&&<div style={{marginTop:12,background:daysColor(days,th)+"18",border:`1px solid ${daysColor(days,th)}44`,borderRadius:11,padding:"10px 14px",textAlign:"center"}}>
+            <p style={{fontSize:22,fontWeight:700,color:daysColor(days,th),fontFamily:"'Space Grotesk',sans-serif"}}>{Math.abs(days)}</p>
+            <p style={{fontSize:11,color:daysColor(days,th),fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{days<0?t.overdueLbl:days===0?t.dueToday:t.daysLeft}</p>
+            {activeReq&&<p style={{fontSize:10,color:th.muted,marginTop:4}}>{t.returnBy}: {activeReq.dueDate}</p>}
+          </div>}
+        </div>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexDirection:isAr?"row-reverse":"row"}}>
+            <span style={{background:dc+"22",color:dc,border:`1px solid ${dc}44`,fontSize:11,fontWeight:600,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif"}}>{book.dept}</span>
+            <span style={{background:s.c+"18",color:s.c,border:`1px solid ${s.c}44`,fontSize:11,fontWeight:600,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",textTransform:"capitalize"}}>{s.label}</span>
+            {book.isNew&&<span style={{background:th.prime+"18",color:th.prime,border:`1px solid ${th.prime}44`,fontSize:11,fontWeight:700,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif"}}>NEW</span>}
+          </div>
+          <h1 style={{fontSize:23,fontWeight:700,color:th.text,lineHeight:1.25,marginBottom:7,fontFamily:"'Space Grotesk',sans-serif",letterSpacing:"-0.02em"}}>{book.title}</h1>
+          <p style={{fontSize:13,color:th.sub,marginBottom:6}}>{isAr?"بقلم":"by"} <strong style={{color:th.text}}>{book.author}</strong></p>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexDirection:isAr?"row-reverse":"row"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4,color:th.amber,fontSize:13,fontWeight:600}}><Ic p={P.star} s={13} fill color={th.amber}/>{book.rating}</span>
+            <span style={{fontSize:12,color:th.muted}}>{book.borrows>0?`${book.borrows} borrows`:"New arrival"}</span>
+          </div>
+          <p style={{fontSize:13,color:th.sub,lineHeight:1.8,marginBottom:24,background:th.surface,border:`1px solid ${th.border}`,borderRadius:11,padding:"14px 16px",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{book.desc}</p>
+          <div style={{display:"flex",gap:10,flexDirection:isAr?"row-reverse":"row"}}>
+            <button onClick={()=>{if(!btnDisabled)sendBorrowRequest(book);}} className="btn" disabled={btnDisabled} style={{flex:2,background:btnDisabled?(justFlashed?th.green+"44":th.dim):justFlashed?th.green:`linear-gradient(135deg,${th.prime},${th.primeD})`,borderRadius:11,padding:"13px",color:btnDisabled&&!justFlashed?"#777":"#fff",fontSize:13,fontWeight:700,fontFamily:"'Space Grotesk',sans-serif",cursor:btnDisabled&&!justFlashed?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all 0.3s"}}><Ic p={P.bookOpen} s={14}/>{btnLabel}</button>
+            <button onClick={()=>toggleWishlist(book.id)} className="btn" style={{flex:1,background:inWl?th.red+"15":th.surface,border:`1px solid ${inWl?th.red+"44":th.border}`,borderRadius:11,padding:"13px",color:inWl?th.red:th.sub,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexDirection:isAr?"row-reverse":"row"}}>
+              <Ic p={P.heart} s={13} fill={inWl} color={inWl?th.red:th.sub}/>{inWl?t.inWishlist:t.addWishlist}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DEPTS=["All","Computer Science","Engineering","Medicine","Pharmacy","Science","Commerce","Arts"];
+const DEPT_ICONS={"All":P.explore,"Computer Science":P.lib,"Engineering":P.spark,"Medicine":P.heart,"Pharmacy":P.check,"Science":P.star,"Commerce":P.arrowR,"Arts":P.bookOpen};
+
+function ExplorePage({th,t,isAr,searchQ,setSearchQ,exploreFilter,setExploreFilter,sc,wishlist,toggleWishlist,studentReqStatus,onBook}){
+  const filtered=BOOKS.filter(b=>{
+    const matchDept=exploreFilter==="All"||b.dept===exploreFilter;
+    const matchQ=!searchQ||b.title.toLowerCase().includes(searchQ.toLowerCase())||b.author.toLowerCase().includes(searchQ.toLowerCase())||b.dept.toLowerCase().includes(searchQ.toLowerCase());
+    return matchDept&&matchQ;
+  });
+  return(
+    <div style={{display:"flex",minHeight:"calc(100vh - 62px)"}}>
+      <aside style={{width:188,flexShrink:0,background:th.surface,borderRight:isAr?"none":`1px solid ${th.border}`,borderLeft:isAr?`1px solid ${th.border}`:"none",padding:"16px 8px",display:"flex",flexDirection:"column",gap:2}}>
+        <p style={{fontSize:9,fontWeight:700,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",padding:"0 8px",marginBottom:8,fontFamily:"'Space Grotesk',sans-serif"}}>{isAr?"الأقسام":"Categories"}</p>
+        {DEPTS.map(d=>{
+          const cnt=d==="All"?BOOKS.length:BOOKS.filter(b=>b.dept===d).length;
+          const isActive=exploreFilter===d;
+          const dc=d==="All"?th.prime:deptColor(d);
+          return(
+            <button key={d} onClick={()=>setExploreFilter(d)} className="btn" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 10px",borderRadius:10,background:isActive?dc+"18":"transparent",border:`1px solid ${isActive?dc+"55":"transparent"}`,color:isActive?dc:th.sub,fontSize:12,fontWeight:isActive?700:400,fontFamily:"'Space Grotesk',sans-serif",transition:"all 0.18s",flexDirection:isAr?"row-reverse":"row"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexDirection:isAr?"row-reverse":"row"}}>
+                <div style={{width:26,height:26,borderRadius:8,background:isActive?dc+"22":th.card,display:"flex",alignItems:"center",justifyContent:"center",color:isActive?dc:th.muted,flexShrink:0}}><Ic p={DEPT_ICONS[d]||P.book} s={12}/></div>
+                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:88}}>{d==="All"?(isAr?"الكل":d):d}</span>
+              </div>
+              <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,background:isActive?dc+"22":th.card,color:isActive?dc:th.muted,flexShrink:0}}>{cnt}</span>
+            </button>
+          );
+        })}
+        <div style={{marginTop:"auto",paddingTop:16,borderTop:`1px solid ${th.border}`}}>
+          <p style={{fontSize:10,color:th.muted,padding:"0 8px",fontFamily:"'Plus Jakarta Sans',sans-serif",lineHeight:1.5}}>{isAr?`${BOOKS.length} كتاب في المجموعة`:`${BOOKS.length} books in collection`}</p>
+        </div>
+      </aside>
+      <div style={{flex:1,padding:"22px",overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexDirection:isAr?"row-reverse":"row"}}>
+          <div style={{width:4,height:22,borderRadius:4,background:`linear-gradient(180deg,${th.cyan},${th.cyan}88)`}}/>
+          <h2 style={{fontSize:18,fontWeight:700,color:th.text,fontFamily:"'Space Grotesk',sans-serif"}}>{exploreFilter==="All"?t.explore:exploreFilter}</h2>
+          <span style={{fontSize:11,color:th.muted,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{filtered.length} {isAr?"كتاب":"books"}</span>
+        </div>
+        <div style={{position:"relative",marginBottom:16}}>
+          <div style={{position:"absolute",left:isAr?"auto":12,right:isAr?12:"auto",top:"50%",transform:"translateY(-50%)",color:th.muted}}><Ic p={P.search} s={14}/></div>
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder={t.search} style={{width:"100%",background:th.card,border:`1px solid ${th.border}`,borderRadius:11,padding:isAr?"10px 37px 10px 13px":"10px 13px 10px 37px",color:th.text,fontSize:13,fontFamily:"'Plus Jakarta Sans',sans-serif",outline:"none"}}/>
+        </div>
+        {filtered.length===0
+          ?<div style={{textAlign:"center",padding:"48px 0"}}><div style={{color:th.muted,display:"flex",justifyContent:"center",marginBottom:12}}><Ic p={P.search} s={36}/></div><p style={{color:th.muted,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{isAr?"لم يتم العثور على كتب":"No books found"}</p></div>
+          :<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:13}}>
+            {filtered.map(bk=>(<BookCard key={bk.id} bk={bk} th={th} sc={sc} onClick={()=>onBook(bk)} wishlist={wishlist} onToggleWishlist={toggleWishlist} studentReqStatus={studentReqStatus}/>))}
+          </div>
+        }
+      </div>
+    </div>
+  );
+}
+
 function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
   const[user,setUser]=useState(null);
   const[page,setPage]=useState("home");
@@ -225,14 +323,14 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
   const[requests,setRequests]=useState([]);
   const[wishlist,setWishlist]=useState([]);
   const[notifs,setNotifs]=useState([]);
-  const[searchQ,setSearchQ]=useState("");
+  const[searchQ,setSearchQ]=useState("");const[exploreFilter,setExploreFilter]=useState("All");
   const[reqFlash,setReqFlash]=useState(null);
   const chatRef=useRef(null);
   const FEAT=[BOOKS[1],BOOKS[3],BOOKS[0],BOOKS[5],BOOKS[2],BOOKS[6]];
   const[si,setSi]=useState(2);
 
   useEffect(()=>{const i=setInterval(()=>setSi(a=>(a+1)%FEAT.length),4000);return()=>clearInterval(i);},[]);
-  useEffect(()=>{chatRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  useEffect(()=>{if(chatRef.current)chatRef.current.scrollIntoView({behavior:"smooth"});},[msgs]);
 
   useEffect(()=>{
     if(!user)return;
@@ -277,7 +375,7 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
 
   const getPos=i=>{let d=i-si;if(d>FEAT.length/2)d-=FEAT.length;if(d<-FEAT.length/2)d+=FEAT.length;return d;};
 
-  const nav=(pg)=>{setPage(pg);setBook(null);};
+  const nav=(pg)=>{setPage(pg);setBook(null);if(pg!=="explore")setSearchQ("");};
 
   const activeLoans=requests.filter(r=>r.status==="approved"&&!r.returnDate);
   const history=requests.filter(r=>r.returnDate||r.status==="rejected");
@@ -321,7 +419,7 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
         <span style={{fontSize:17,fontWeight:700,fontFamily:"'Space Grotesk',sans-serif",letterSpacing:"-0.02em",color:th.text}}>Biblio<span style={{color:th.prime}}>Tech</span></span>
       </div>
       <div style={{display:"flex",gap:2,flexDirection:isAr?"row-reverse":"row"}}>
-        {[[t.home,"home",P.home],[t.explore,"explore",P.explore],[t.library,"library",P.lib],[t.account,"account",P.settings]].map(([label,id,icon])=>(
+        {[[t.home,"home",P.home],[t.explore,"explore",P.explore],[t.library,"library",P.lib]].map(([label,id,icon])=>(
           <button key={id} onClick={()=>nav(id)} className="btn" style={{display:"flex",alignItems:"center",gap:6,background:page===id?th.prime+"20":"transparent",border:`1px solid ${page===id?th.prime+"44":"transparent"}`,borderRadius:10,padding:"7px 13px",color:page===id?th.prime:th.sub,fontSize:12,fontWeight:page===id?600:400,flexDirection:isAr?"row-reverse":"row"}}>
             <Ic p={icon} s={14}/>{label}
             {id==="library"&&activeLoans.length>0&&<span style={{fontSize:9,fontWeight:700,background:th.prime,color:"#fff",borderRadius:20,padding:"1px 5px"}}>{activeLoans.length}</span>}
@@ -329,7 +427,6 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
         ))}
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8,flexDirection:isAr?"row-reverse":"row"}}>
-        <CtrlBar th={th} t={t} tn={tn} setTn={setTn} lang={lang} setLang={setLang} isAr={isAr} onBack={onBack}/>
         <NotifBell th={th} t={t} isAr={isAr} notifs={notifs} onMarkAll={markAllRead} onMarkOne={markOneRead}/>
         <button onClick={()=>nav("account")} className="btn" style={{display:"flex",alignItems:"center",gap:7,background:page==="account"?th.prime+"20":th.surface,border:`1px solid ${page==="account"?th.prime+"44":th.border}`,borderRadius:10,padding:"4px 11px 4px 6px",flexDirection:isAr?"row-reverse":"row"}}>
           <div style={{width:26,height:26,borderRadius:8,background:`linear-gradient(135deg,#1d4ed8,${th.cyan}50)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:th.cyan,fontFamily:"'Space Grotesk',sans-serif"}}>{user.name[0]}</div>
@@ -401,65 +498,10 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
     </div>}
 
     {/* BOOK DETAIL */}
-    {page==="detail"&&book&&(()=>{
-      const s=sc(book.status);const dc=deptColor(book.dept);
-      const sst=studentReqStatus(book.id);
-      const inWl=wishlist.includes(book.id);
-      const activeReq=requests.find(r=>r.bid===book.id&&r.status==="approved"&&!r.returnDate);
-      const days=activeReq?daysLeft(activeReq.dueDateISO):null;
-      const justFlashed=reqFlash===book.id;
-      const btnLabel=sst==="approved"?t.reqBorrowed:sst==="pending"?t.reqPending:justFlashed?`✓ ${t.reqSent}`:t.borrow;
-      const btnDisabled=sst==="approved"||sst==="pending"||book.status==="coming_soon";
-      return(
-        <div style={{padding:"24px",maxWidth:820,margin:"0 auto",animation:"fadeIn 0.4s ease"}}>
-          <button onClick={()=>{setPage("home");setBook(null);}} className="btn" style={{display:"flex",alignItems:"center",gap:7,border:`1px solid ${th.border}`,borderRadius:9,padding:"7px 13px",color:th.sub,fontSize:12,marginBottom:20,flexDirection:isAr?"row-reverse":"row"}}><Ic p={P.back} s={13}/>{isAr?"رجوع":"Back"}</button>
-          <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:28}}>
-            <div>
-              <div style={{borderRadius:14,overflow:"hidden",border:`2px solid ${dc}44`,boxShadow:`0 18px 48px ${book.cover[1]}40`,animation:"float 4s ease infinite"}}><Cover colors={book.cover} h={320}/></div>
-              {days!==null&&<div style={{marginTop:12,background:daysColor(days,th)+"18",border:`1px solid ${daysColor(days,th)}44`,borderRadius:11,padding:"10px 14px",textAlign:"center"}}>
-                <p style={{fontSize:22,fontWeight:700,color:daysColor(days,th),fontFamily:"'Space Grotesk',sans-serif"}}>{Math.abs(days)}</p>
-                <p style={{fontSize:11,color:daysColor(days,th),fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{days<0?t.overdueLbl:days===0?t.dueToday:t.daysLeft}</p>
-                {activeReq&&<p style={{fontSize:10,color:th.muted,marginTop:4}}>{t.returnBy}: {activeReq.dueDate}</p>}
-              </div>}
-            </div>
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexDirection:isAr?"row-reverse":"row"}}>
-                <span style={{background:dc+"22",color:dc,border:`1px solid ${dc}44`,fontSize:11,fontWeight:600,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif"}}>{book.dept}</span>
-                <span style={{background:s.c+"18",color:s.c,border:`1px solid ${s.c}44`,fontSize:11,fontWeight:600,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",textTransform:"capitalize"}}>{s.label}</span>
-                {book.isNew&&<span style={{background:th.prime+"18",color:th.prime,border:`1px solid ${th.prime}44`,fontSize:11,fontWeight:700,padding:"3px 11px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif"}}>NEW</span>}
-              </div>
-              <h1 style={{fontSize:23,fontWeight:700,color:th.text,lineHeight:1.25,marginBottom:7,fontFamily:"'Space Grotesk',sans-serif",letterSpacing:"-0.02em"}}>{book.title}</h1>
-              <p style={{fontSize:13,color:th.sub,marginBottom:6}}>{isAr?"بقلم":"by"} <strong style={{color:th.text}}>{book.author}</strong></p>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexDirection:isAr?"row-reverse":"row"}}>
-                <span style={{display:"flex",alignItems:"center",gap:4,color:th.amber,fontSize:13,fontWeight:600}}><Ic p={P.star} s={13} fill color={th.amber}/>{book.rating}</span>
-                <span style={{fontSize:12,color:th.muted}}>{book.borrows>0?`${book.borrows} borrows`:"New arrival"}</span>
-              </div>
-              <p style={{fontSize:13,color:th.sub,lineHeight:1.8,marginBottom:24,background:th.surface,border:`1px solid ${th.border}`,borderRadius:11,padding:"14px 16px",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{book.desc}</p>
-              <div style={{display:"flex",gap:10,flexDirection:isAr?"row-reverse":"row"}}>
-                <button onClick={()=>{if(!btnDisabled)sendBorrowRequest(book);}} className="btn" disabled={btnDisabled} style={{flex:2,background:btnDisabled?(justFlashed?th.green+"44":th.dim):justFlashed?th.green:`linear-gradient(135deg,${th.prime},${th.primeD})`,borderRadius:11,padding:"13px",color:btnDisabled&&!justFlashed?"#777":"#fff",fontSize:13,fontWeight:700,fontFamily:"'Space Grotesk',sans-serif",cursor:btnDisabled&&!justFlashed?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all 0.3s"}}><Ic p={P.bookOpen} s={14}/>{btnLabel}</button>
-                <button onClick={()=>toggleWishlist(book.id)} className="btn" style={{flex:1,background:inWl?th.red+"15":th.surface,border:`1px solid ${inWl?th.red+"44":th.border}`,borderRadius:11,padding:"13px",color:inWl?th.red:th.sub,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexDirection:isAr?"row-reverse":"row"}}>
-                  <Ic p={P.heart} s={13} fill={inWl} color={inWl?th.red:th.sub}/>{inWl?t.inWishlist:t.addWishlist}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    })()}
+    {page==="detail"&&book&&<BookDetail th={th} t={t} isAr={isAr} book={book} sc={sc} wishlist={wishlist} toggleWishlist={toggleWishlist} studentReqStatus={studentReqStatus} requests={requests} sendBorrowRequest={sendBorrowRequest} reqFlash={reqFlash} onBack={()=>{setPage("home");setBook(null);}} daysLeft={daysLeft} daysColor={daysColor}/>}
 
     {/* EXPLORE */}
-    {page==="explore"&&<div style={{padding:"24px"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexDirection:isAr?"row-reverse":"row"}}><div style={{width:4,height:22,borderRadius:4,background:`linear-gradient(180deg,${th.cyan},${th.cyan}88)`}}/><h2 style={{fontSize:18,fontWeight:700,color:th.text,fontFamily:"'Space Grotesk',sans-serif"}}>{t.explore}</h2></div>
-      <div style={{position:"relative",marginBottom:16}}>
-        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:th.muted}}><Ic p={P.search} s={14}/></div>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder={t.search} style={{width:"100%",background:th.card,border:`1px solid ${th.border}`,borderRadius:11,padding:"10px 13px 10px 37px",color:th.text,fontSize:13,fontFamily:"'Plus Jakarta Sans',sans-serif",outline:"none"}}/>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:13}}>
-        {BOOKS.filter(b=>!searchQ||b.title.toLowerCase().includes(searchQ.toLowerCase())||b.author.toLowerCase().includes(searchQ.toLowerCase())||b.dept.toLowerCase().includes(searchQ.toLowerCase())).map(bk=>(
-          <BookCard key={bk.id} bk={bk} th={th} sc={sc} onClick={()=>{setBook(bk);setPage("detail");}} wishlist={wishlist} onToggleWishlist={toggleWishlist} studentReqStatus={studentReqStatus}/>
-        ))}
-      </div>
-    </div>}
+    {page==="explore"&&<ExplorePage th={th} t={t} isAr={isAr} searchQ={searchQ} setSearchQ={setSearchQ} exploreFilter={exploreFilter} setExploreFilter={setExploreFilter} sc={sc} wishlist={wishlist} toggleWishlist={toggleWishlist} studentReqStatus={studentReqStatus} onBook={bk=>{setBook(bk);setPage("detail");}}/>}
 
     {/* MY LIBRARY */}
     {page==="library"&&<div style={{padding:"24px"}}>
@@ -508,7 +550,7 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
                   <p style={{fontSize:10,color:th.muted,marginTop:4,display:"flex",alignItems:"center",gap:4,flexDirection:isAr?"row-reverse":"row"}}><Ic p={P.calendar} s={10}/>{t.returnBy}: {r.dueDate}</p>
                 </div>
                 <div style={{textAlign:"center",background:dc2+"14",border:`1px solid ${dc2}33`,borderRadius:11,padding:"8px 12px",minWidth:60,flexShrink:0}}>
-                  <p style={{fontSize:20,fontWeight:700,color:dc2,fontFamily:"'Space Grotesk',sans-serif",lineHeight:1}}>{Math.abs(days??0)}</p>
+                  <p style={{fontSize:20,fontWeight:700,color:dc2,fontFamily:"'Space Grotesk',sans-serif",lineHeight:1}}>{Math.abs(days!==null?days:0)}</p>
                   <p style={{fontSize:9,color:dc2,marginTop:2,fontFamily:"'Space Grotesk',sans-serif",fontWeight:600}}>{days!==null&&days<0?t.overdueLbl:days===0?t.dueToday:"days"}</p>
                 </div>
               </div>);
@@ -622,7 +664,7 @@ function StudentPortal({th,t,isAr,tn,setTn,lang,setLang,onBack}){
     </div>
   </div>);}
 
-function AdminPanel({th,t,isAr,controls}){
+function AdminPanel({th,t,isAr,controls,tn,setTn,lang,setLang}){
   const[loggedIn,setLoggedIn]=useState(false);
   const[u,setU]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[loading,setLoading]=useState(false);
   const[active,setActive]=useState("dashboard");
@@ -698,8 +740,25 @@ function AdminPanel({th,t,isAr,controls}){
             {badge&&<span style={{fontSize:9,fontWeight:700,background:th.red,color:"#fff",borderRadius:20,padding:"1px 6px",minWidth:18,textAlign:"center"}}>{badge}</span>}
           </button>);})}
       </nav>
-      <div style={{padding:"10px 8px",borderTop:`1px solid ${th.border}`}}>
-        <div style={{marginBottom:8}}>{controls}</div>
+      <div style={{padding:"12px 10px",borderTop:`1px solid ${th.border}`}}>
+        {/* Theme picker */}
+        <p style={{fontSize:9,fontWeight:700,color:th.muted,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Space Grotesk',sans-serif",paddingLeft:2}}>{isAr?"المظهر":"Theme"}</p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:10}}>
+          {[["dark",P.moon,isAr?"داكن":"Dark"],["medium",null,isAr?"متوسط":"Med"],["light",P.sun,isAr?"فاتح":"Light"]].map(([name,icon,label])=>(
+            <button key={name} onClick={()=>setTn(name)} className="btn" style={{padding:"7px 4px",borderRadius:9,border:`1px solid ${tn===name?th.prime+"66":th.border}`,background:tn===name?th.prime+"18":th.card,color:tn===name?th.prime:th.muted,fontSize:10,fontWeight:tn===name?700:400,fontFamily:"'Space Grotesk',sans-serif",display:"flex",flexDirection:"column",alignItems:"center",gap:3,transition:"all 0.18s"}}>
+              {icon&&<Ic p={icon} s={11}/>}{label}
+            </button>
+          ))}
+        </div>
+        {/* Language picker */}
+        <p style={{fontSize:9,fontWeight:700,color:th.muted,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Space Grotesk',sans-serif",paddingLeft:2}}>{isAr?"اللغة":"Language"}</p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:10}}>
+          {[["en","English"],["ar","عربي"]].map(([code,label])=>(
+            <button key={code} onClick={()=>setLang(code)} className="btn" style={{padding:"7px 4px",borderRadius:9,border:`1px solid ${lang===code?th.prime+"66":th.border}`,background:lang===code?th.prime+"18":th.card,color:lang===code?th.prime:th.muted,fontSize:11,fontWeight:lang===code?700:400,fontFamily:"'Space Grotesk',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all 0.18s"}}>
+              <Ic p={P.globe} s={11}/>{label}
+            </button>
+          ))}
+        </div>
         <button onClick={()=>setLoggedIn(false)} className="btn" style={{display:"flex",alignItems:"center",gap:7,width:"100%",padding:"8px 11px",borderRadius:9,color:th.muted,fontSize:11,border:`1px solid ${th.border}`,flexDirection:isAr?"row-reverse":"row"}}><Ic p={P.logout} s={13}/>{t.signout}</button>
       </div>
     </aside>
@@ -734,6 +793,32 @@ function AdminPanel({th,t,isAr,controls}){
             </ResponsiveContainer>
           </div>
         </div>
+        {/* Pending requests quick widget */}
+        {allReqs.filter(r=>r.status==="pending").length>0&&<div style={{marginTop:13}}>
+          <div style={{background:th.card,border:`1px solid ${th.border}`,borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"13px 16px",borderBottom:`1px solid ${th.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexDirection:isAr?"row-reverse":"row"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexDirection:isAr?"row-reverse":"row"}}>
+                <div style={{width:8,height:8,borderRadius:"50%",background:th.amber,animation:"blink 2s ease infinite"}}/>
+                <h3 style={{fontSize:13,fontWeight:700,color:th.text,fontFamily:"'Space Grotesk',sans-serif"}}>{isAr?"طلبات تنتظر الموافقة":"Awaiting Approval"}</h3>
+                <span style={{fontSize:9,fontWeight:700,background:th.amber,color:"#fff",borderRadius:20,padding:"1px 7px"}}>{allReqs.filter(r=>r.status==="pending").length}</span>
+              </div>
+              <button onClick={()=>setActive("requests")} className="btn" style={{fontSize:11,color:th.prime,fontWeight:600,fontFamily:"'Space Grotesk',sans-serif"}}>{isAr?"عرض الكل":"View all"} →</button>
+            </div>
+            {allReqs.filter(r=>r.status==="pending").slice(0,3).map((r,i)=>(
+              <div key={r.id} className="rh" style={{display:"flex",alignItems:"center",gap:11,padding:"11px 16px",borderBottom:`1px solid ${th.border}`,transition:"background 0.2s",flexDirection:isAr?"row-reverse":"row"}}>
+                <div style={{width:36,height:48,borderRadius:7,overflow:"hidden",flexShrink:0}}><Cover colors={r.bCover||["#1e3a8a","#1e40af"]} h={48}/></div>
+                <div style={{flex:1,minWidth:0,textAlign:isAr?"right":"left"}}>
+                  <p style={{fontSize:12,fontWeight:700,color:th.text,fontFamily:"'Space Grotesk',sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.bTitle}</p>
+                  <p style={{fontSize:11,color:th.sub,marginTop:1}}>{r.sName} · <span style={{color:th.muted}}>{r.reqDate}</span></p>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0,flexDirection:isAr?"row-reverse":"row"}}>
+                  <button onClick={()=>approveReq(r.id)} className="btn" style={{background:th.green+"20",border:`1px solid ${th.green}44`,borderRadius:7,padding:"5px 10px",color:th.green,fontSize:10,fontWeight:700}}>{t.approve}</button>
+                  <button onClick={()=>rejectReq(r.id)} className="btn" style={{background:th.red+"20",border:`1px solid ${th.red}44`,borderRadius:7,padding:"5px 10px",color:th.red,fontSize:10,fontWeight:700}}>{t.reject}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>}
       </div>}
 
       {active==="books"&&<div>
@@ -864,7 +949,7 @@ export default function BiblioTechApp(){
     <><style>{makeCSS(th.bg)}</style>
     {page==="landing"&&<Landing th={th} t={t} tn={tn} setTn={setTn} lang={lang} setLang={setLang} isAr={isAr} onStudent={()=>setPage("student")} onAdmin={()=>setPage("admin")}/>}
     {page==="student"&&<StudentPortal th={th} t={t} isAr={isAr} tn={tn} setTn={setTn} lang={lang} setLang={setLang} onBack={()=>setPage("landing")}/>}
-    {page==="admin"&&<AdminPanel th={th} t={t} isAr={isAr} controls={controls}/>}
+    {page==="admin"&&<AdminPanel th={th} t={t} isAr={isAr} controls={controls} tn={tn} setTn={setTn} lang={lang} setLang={setLang}/>}
     </>
   );
 }
