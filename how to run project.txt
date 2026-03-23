@@ -1,0 +1,7 @@
+1- open mysql workbench and create schema with name "bibliotech"
+2- run this files:
+    - "Backend/scripts/create_db.py"
+    - "Backend/scripts/seed_db.py"
+3- run start.bat
+
+Note: check you install all libraries in file "AI/requirements.txt"

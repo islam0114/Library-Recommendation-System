@@ -1,0 +1,22 @@
+# Node & React
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+venv/
+env/
+*.pyc
+
+# Secrets & Environment Variables
+.env
+
+# Database files & Local Uploads (Optional but recommended)
+*.sqlite3
+*.db
+uploads/
+production_models/*.pkl
+
+# Ignore large AI model files
+*.pkl

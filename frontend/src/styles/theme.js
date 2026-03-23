@@ -1,0 +1,5 @@
+export const THEMES = {
+  dark:   { bg:"#07090f", surface:"#0f1219", card:"#141824", card2: "#1a1f2e", border:"rgba(255,255,255,0.07)", text:"#f0eef9", sub:"#8b9ab0", muted:"#3d4a5c", dim:"#151b28", prime:"#0d9488", primeD:"#0f766e", primeG:"#0d948822", accent:"#6366f1", cyan:"#06b6d4", green:"#22c55e", red:"#ef4444", amber:"#f59e0b", navBg:"rgba(7,9,15,0.95)", gridLine:"rgba(255,255,255,0.014)" },
+  medium: { bg:"#141925", surface:"#1c2233", card:"#232b3e", card2: "#2a3348", border:"rgba(255,255,255,0.09)", text:"#eef0f8", sub:"#8b9ab8", muted:"#4a5568", dim: "#1e2536", prime:"#0d9488", primeD:"#0f766e", primeG:"#0d948828", accent:"#818cf8", cyan: "#22d3ee", green:"#22c55e", red:"#ef4444", amber:"#f59e0b", navBg: "rgba(20,25,37,0.95)", gridLine: "rgba(255,255,255,0.02)" },
+  light:  { bg:"#f0f4f8", surface:"#ffffff", card:"#ffffff", card2: "#f8fafc", border:"rgba(0,0,0,0.08)",       text:"#0f172a", sub:"#475569", muted:"#94a3b8", dim: "#e2e8f0", prime:"#0d9488", primeD:"#0f766e", primeG:"#0d948815", accent:"#6366f1", cyan: "#0891b2", green:"#16a34a", red:"#dc2626", amber:"#d97706", navBg: "rgba(240,244,248,0.95)", gridLine: "rgba(0,0,0,0.03)" },
+};
