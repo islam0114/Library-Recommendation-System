@@ -13,41 +13,33 @@ export default function ExplorePage({ th, t, isAr, searchQ, setSearchQ, exploreF
   
   const [visibleCount, setVisibleCount] = useState(24);
 
-// تصفير العداد لـ 24 والعودة لأعلى الصفحة لما الطالب يبحث أو يغير القسم
   useEffect(() => {
     setVisibleCount(24);
     
-    // السطر ده هيرجع السكرول لأول الصفحة فوراً مع كل تغيير للقسم أو البحث
     window.scrollTo({ 
       top: 0, 
       left: 0, 
-      behavior: "instant" // ممكن تخليها "smooth" لو عايزها تطلع بنعومة
+      behavior: "instant"
     });
     
   }, [searchQ, exploreFilter]);
 
-  // 1. الطريقة الاحترافية لمراقبة العناصر المخفية (Callback Ref)
   const observer = useRef(null);
   const loaderRef = useCallback((node) => {
-    // لو فيه مراقب قديم، افصله عشان منعملش زحمة
     if (observer.current) observer.current.disconnect();
 
-    // إنشاء مراقب جديد
     observer.current = new IntersectionObserver((entries) => {
-      // لو علامة التحميل ظهرت في الشاشة
       if (entries[0].isIntersecting) {
         setVisibleCount(prevCount => prevCount + 24);
       }
     }, { 
       threshold: 0.1, 
-      rootMargin: "300px" // يحمل قبل ما نوصل للآخر بـ 300 بيكسل
+      rootMargin: "300px"
     });
 
-    // لو علامة التحميل موجودة حالياً في الـ DOM، راقبها
     if (node) observer.current.observe(node);
   }, []);
 
-  // فلترة الكتب بناءً على البحث والقسم
   let filtered = books;
   if (exploreFilter !== "All") filtered = filtered.filter(b => b.dept === exploreFilter);
   if (searchQ) {
@@ -55,10 +47,7 @@ export default function ExplorePage({ th, t, isAr, searchQ, setSearchQ, exploreF
     filtered = filtered.filter(b => (b.title || "").toLowerCase().includes(q) || (b.author || "").toLowerCase().includes(q));
   }
 
-  // قص المصفوفة لعرض العدد المسموح به فقط
   const displayedBooks = filtered.slice(0, visibleCount);
-
-// ... (باقي الكود والـ return زي ما هما بالظبط بدون أي تغيير)
 
   return (
     <div style={{ direction: isAr ? "rtl" : "ltr", display: "flex", flexDirection: "column", minHeight: "100vh", paddingBottom: 60 }}>
@@ -144,7 +133,6 @@ export default function ExplorePage({ th, t, isAr, searchQ, setSearchQ, exploreF
               ))}
             </div>
 
-            {/* 3. نقطة المراقبة الخفية (بديل لزرار Load More) */}
             {visibleCount < filtered.length && (
               <div ref={loaderRef} style={{ width: "100%", height: 60, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 24 }}>
                 {/* علامة تحميل دائرية بتلف بتدي شكل شيك وإنت بتنزل */}

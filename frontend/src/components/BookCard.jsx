@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { Ic, P } from "./Icons";
 
-// 1. دالة الألوان للأقسام
+// 1. Department Color Mapping Utility
 export const deptColor = (d) => {
   const c = {
     "Computer Science": "#06b6d4", "Mathematics": "#6366f1", "Physics": "#8b5cf6",
@@ -19,7 +19,7 @@ export const deptColor = (d) => {
   return c[d] || "#64748b";
 };
 
-// 2. كومبوننت الغلاف (Cover) المطور مع الأيقونة البديلة
+// 2. Enhanced Cover Component with Fallback Icon
 export function Cover({ children, colors, h = 240, imageUrl }) {
   const [imgError, setImgError] = useState(false); 
 
@@ -34,6 +34,7 @@ export function Cover({ children, colors, h = 240, imageUrl }) {
       alignItems: "center",
       justifyContent: "center"
     }}>
+      {/* Render image if URL exists and no loading error occurred */}
       {imageUrl && !imgError && (
         <img 
           src={imageUrl} 
@@ -42,11 +43,15 @@ export function Cover({ children, colors, h = 240, imageUrl }) {
           onError={() => setImgError(true)} 
         />
       )}
+      
+      {/* Fallback placeholder if image is missing or failed to load */}
       {(imgError || !imageUrl) && (
         <div style={{ zIndex: 1, color: "rgba(255,255,255,0.15)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <Ic p={P.book} s={48} />
         </div>
       )}
+      
+      {/* Gradient overlays and child elements (badges, buttons) */}
       <div style={{ position: "absolute", inset: 0, zIndex: 2 }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "60px", background: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }} />
@@ -56,11 +61,11 @@ export function Cover({ children, colors, h = 240, imageUrl }) {
   );
 }
 
-// 3. الكومبوننت الأساسي لكارت الكتاب
+// 3. Main BookCard Component
 export default function BookCard({ bk, th, sc, onClick, wishlist, onToggleWishlist, studentReqStatus, isAr }) {
   const [hov, setHov] = useState(false);
   
-  // 👇 حالات (States) جديدة لحفظ التقييم وعدد المراجعات 👇
+  // State management for dynamic ratings and review counts
   const [actualRating, setActualRating] = useState(bk.avg_rating || bk.rating || "0.0");
   const [reviewCount, setReviewCount] = useState(0);
 
@@ -69,17 +74,25 @@ export default function BookCard({ bk, th, sc, onClick, wishlist, onToggleWishli
   const inWl = wishlist ? wishlist.includes(bk.id) : false;
   const sst = studentReqStatus ? studentReqStatus(bk.id) : null;
 
-  // 👇 السحر هنا: بيجلب المراجعات الخاصة بالكتاب ده ويحسب المتوسط أوتوماتيك 👇
+  const availableCopies = bk.copies_avail !== undefined ? bk.copies_avail : (bk.copies_available || 0);
+  const isOutOfStock = availableCopies <= 0;
+  const availColor = isOutOfStock ? th.red : th.prime;
+  const availText = isOutOfStock ? (isAr ? "نفدت النسخ" : "Out of Stock") : `${availableCopies} ${isAr ? "متاح" : "Avail."}`;
+
+  // Automatically fetch and calculate the average rating based on actual book reviews
   useEffect(() => {
     let isMounted = true;
+    
     fetch(`http://localhost:8000/api/books/${bk.id}/reviews`)
       .then(res => res.json())
       .then(data => {
         if (isMounted && data.reviews) {
           setReviewCount(data.reviews.length);
+          
+          // Calculate the average rating if reviews exist
           if (data.reviews.length > 0) {
             const sum = data.reviews.reduce((acc, rev) => acc + rev.rating, 0);
-            setActualRating((sum / data.reviews.length).toFixed(1)); // حساب المتوسط التقريبي
+            setActualRating((sum / data.reviews.length).toFixed(1)); 
           }
         }
       })
@@ -109,29 +122,33 @@ export default function BookCard({ bk, th, sc, onClick, wishlist, onToggleWishli
       <Cover colors={bk.cover} h={240} imageUrl={bk.image_proxy_url || bk.image_url}>
         <div style={{position:"absolute",top:7,left:7,background:s.c+"22",color:s.c,border:`1px solid ${s.c}44`,fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",textTransform:"uppercase"}}>{s.label}</div>
         {bk.isNew && <div style={{position:"absolute",top:7,right:onToggleWishlist?32:7,background:th.prime,color:"#fff",fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif"}}>NEW</div>}
+        
         {onToggleWishlist && (
           <button onClick={e => { e.stopPropagation(); onToggleWishlist(bk.id); }} className="btn" style={{position:"absolute",top:5,right:5,width:26,height:26,borderRadius:8,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
             <Ic p={P.heart} s={12} fill={inWl} color={inWl?th.red:"rgba(255,255,255,0.8)"}/>
           </button>
         )}
+        
         {sst === "approved" && <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",background:th.green+"ee",color:"#fff",fontSize:8,fontWeight:700,padding:"2px 9px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",whiteSpace:"nowrap"}}>✓ Yours</div>}
         {sst === "pending" && <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",background:th.amber+"ee",color:"#fff",fontSize:8,fontWeight:700,padding:"2px 9px",borderRadius:20,fontFamily:"'Space Grotesk',sans-serif",whiteSpace:"nowrap"}}>⏳ Pending</div>}
       </Cover>
+
       <div style={{padding:"10px 12px 14px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between"}}>
         <div>
           <p style={{fontSize:12,fontWeight:700,color:th.text,lineHeight:1.4,marginBottom:3,fontFamily:"'Space Grotesk',sans-serif",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{bk.title}</p>
           <p style={{fontSize:10,color:th.sub,marginBottom:12,fontFamily:"'Plus Jakarta Sans',sans-serif",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{bk.author}</p>
         </div>
         
-        {/* 👇 عرض التقييم المحسوب، وجنبه عدد المراجعات (لو فيه) 👇 */}
+        {/* Render calculated rating and dynamic availability badge */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center", borderTop: `1px solid ${th.border}`, paddingTop: 10, marginTop: "auto"}}>
           <span style={{fontSize:11,color:th.amber,display:"flex",alignItems:"center",gap:4,fontFamily:"'Space Grotesk',sans-serif",fontWeight:700}}>
             <Ic p={P.star} s={11} fill color={th.amber}/>
             {actualRating}
             {reviewCount > 0 && <span style={{fontSize: 9, color: th.muted, fontWeight: 500}}>({reviewCount})</span>}
           </span>
-          <span style={{fontSize:10,color:th.prime, fontWeight:700, background: th.prime+"18", padding: "3px 8px", borderRadius: 8, border: `1px solid ${th.prime}33`}}>
-            {bk.copies_avail !== undefined ? bk.copies_avail : (bk.copies_available || 0)} {isAr ? "متاح" : "Avail."}
+          
+          <span style={{fontSize:10,color:availColor, fontWeight:700, background: availColor+"18", padding: "3px 8px", borderRadius: 8, border: `1px solid ${availColor}33`}}>
+            {availText}
           </span>
         </div>
       </div>

@@ -1,8 +1,6 @@
 /**
  * SocialPage.jsx — BiblioTech Social Layer
- * ══════════════════════════════════════════════════════════
  * Friends · Direct Messages · Communities
- * ══════════════════════════════════════════════════════════
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -11,9 +9,7 @@ import { Ic, P } from "../components/Icons";
 
 const API = "http://localhost:8000";
 
-// ══════════════════════════════════════════════════════════
 //  HELPERS & CONSTANTS
-// ══════════════════════════════════════════════════════════
 const Spin = ({ s = 16, color = "currentColor" }) => (
   <span style={{
     width: s, height: s, borderRadius: "50%",
@@ -57,7 +53,6 @@ const fmtTime = ts => {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 };
 
-// خريطة أيقونات ذكية لتصنيفات الـ Communities
 const COMM_ICONS = {
   "Books & Reading": P.bookOpen,
   "Science": P.explore,
@@ -73,9 +68,7 @@ const COMM_ICONS = {
 
 const getCommIcon = (cat) => COMM_ICONS[cat] || P.hash;
 
-// ══════════════════════════════════════════════════════════
 //  TOAST
-// ══════════════════════════════════════════════════════════
 function Toast({ msg, type, th, onClose }) {
   const c = type === "success" ? th.green : type === "error" ? th.red : th.amber;
   useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
@@ -94,9 +87,7 @@ function Toast({ msg, type, th, onClose }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
 //  PROFILE MODAL
-// ══════════════════════════════════════════════════════════
 function ProfileModal({ th, token, userId, myId, onClose, onStartChat }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -218,9 +209,7 @@ function ProfileModal({ th, token, userId, myId, onClose, onStartChat }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
 //  CHAT WINDOW — DM or Community
-// ══════════════════════════════════════════════════════════
 function ChatWindow({ th, token, myId, myName, target, type, onBack }) {
   const [messages, setMessages]  = useState([]);
   const [input,    setInput]     = useState("");
@@ -314,7 +303,6 @@ function ChatWindow({ th, token, myId, myName, target, type, onBack }) {
         {loading && <div style={{ textAlign: "center", padding: "40px 0" }}><Spin s={28} color={th.prime} /></div>}
         {messages.map((msg, i) => {
           const isMe = Number(msg.sender_id) === Number(myId);
-          // لا نعرض اسم المرسل إذا كانت الرسالة مني أنا
           const showName = type === "community" && !isMe && (i === 0 || Number(messages[i - 1]?.sender_id) !== Number(msg.sender_id));
           const showTime = i === messages.length - 1 || Number(messages[i + 1]?.sender_id) !== Number(msg.sender_id);
           const msgColor = nameColor(msg.sender_name);
@@ -407,9 +395,7 @@ function ChatWindow({ th, token, myId, myName, target, type, onBack }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
 //  CREATE COMMUNITY MODAL
-// ══════════════════════════════════════════════════════════
 const COMMUNITY_COLORS = ["#0d9488","#6366f1","#f59e0b","#ef4444","#22c55e","#06b6d4","#ec4899","#8b5cf6","#f97316","#3b82f6"];
 const COMMUNITY_CATS   = ["General","Books & Reading","Science","Technology","Medicine","History","Law","Arts","Philosophy","Other"];
 
@@ -490,9 +476,7 @@ function CreateCommunityModal({ th, token, onClose, onDone }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
 //  MAIN SOCIAL PAGE
-// ══════════════════════════════════════════════════════════
 export default function SocialPage({ th, token, myId, myName }) {
   // Tabs: "friends" (unified friends + chats) | "communities" | "people"
   const [tab,          setTab]         = useState("friends");
@@ -628,7 +612,6 @@ export default function SocialPage({ th, token, myId, myName }) {
     { id: "people",      label: "Find People",     icon: P.search, badge: 0 },
   ];
 
-  // دمج الأصدقاء والمحادثات في قائمة واحدة ذكية
   const enrichedFriends = friends.map(f => {
     const c = conversations.find(x => x.other_id === f.id);
     return { ...f, ...c };
@@ -893,9 +876,7 @@ export default function SocialPage({ th, token, myId, myName }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
 //  COMMUNITY CARD
-// ══════════════════════════════════════════════════════════
 function CommunityCard({ c, th, isMember, onOpen, onJoin }) {
   const [hov, setHov] = useState(false);
   const color = c.cover_color || th.prime;

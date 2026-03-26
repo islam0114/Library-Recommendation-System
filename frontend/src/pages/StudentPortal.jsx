@@ -74,7 +74,7 @@ export default function StudentPortal({ th, t, isAr, tn, setTn, lang, setLang, o
         refreshData(); 
         pollRef.current = setInterval(() => {
             refreshData();
-            fetchBooks(); // تحديث الكتب بشكل صامت لضمان أن عدد النسخ المتاحة حديث دائماً
+            fetchBooks();
         }, 5000); 
         return () => clearInterval(pollRef.current);
     }, [user?.userId, fetchBooks, refreshData]);
@@ -83,7 +83,6 @@ export default function StudentPortal({ th, t, isAr, tn, setTn, lang, setLang, o
         window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }, [page, book]);
 
-    // ── 🧠 جلب توصيات الذكاء الاصطناعي ───────────────
     useEffect(() => {
         if (page === "home" && user && user.userId && BOOKS.length > 0) {
             setAiLoading(true);
@@ -146,7 +145,7 @@ export default function StudentPortal({ th, t, isAr, tn, setTn, lang, setLang, o
             ]);
             setRequests(reqData.requests || []);
             setNotifs(notifData.notifications || []);
-            fetchBooks(); // 👈 جلب الكتب من جديد فوراً لتحديث عدد النسخ المتاحة
+            fetchBooks();
             
             setReqFlash(bk.id); setTimeout(() => setReqFlash(null), 2500);
         } catch (_) {}

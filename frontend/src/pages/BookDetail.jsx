@@ -21,8 +21,20 @@ export default function BookDetail({
   const activeReq = requests.find(r => r.bid === book.id && r.status === "approved" && !r.returnDate);
   const days = activeReq ? daysLeft(activeReq.dueDateISO) : null;
   const justFlashed = reqFlash === book.id;
-  const btnLabel = sst === "approved" ? t.reqBorrowed : sst === "pending" ? t.reqPending : justFlashed ? `✓ ${t.reqSent}` : t.borrow;
-  const btnDisabled = sst === "approved" || sst === "pending" || book.status === "coming_soon";
+  
+  // 🔴 منطق الكشف عن توفر النسخ وقفل الزرار 🔴
+  const availableCopiesCount = book.copies_avail !== undefined ? book.copies_avail : (book.copies_available || 0);
+  const isOutOfStock = availableCopiesCount <= 0;
+  const availColor = isOutOfStock ? th.red : th.prime;
+  const availText = isOutOfStock ? (isAr ? "نفدت النسخ" : "Out of Stock") : `${availableCopiesCount} ${isAr ? "نسخة متاحة للطلب" : "Available Copies"}`;
+  
+  const btnDisabled = sst === "approved" || sst === "pending" || book.status === "coming_soon" || isOutOfStock;
+  
+  let btnLabel = t.borrow;
+  if (sst === "approved") btnLabel = t.reqBorrowed;
+  else if (sst === "pending") btnLabel = t.reqPending;
+  else if (justFlashed) btnLabel = `✓ ${t.reqSent}`;
+  else if (isOutOfStock) btnLabel = isAr ? "غير متاح حالياً" : "Unavailable";
 
   const [similarBooks, setSimilarBooks] = useState([]);
   const [loadingSimilar, setLoadingSimilar] = useState(true);
@@ -89,14 +101,10 @@ export default function BookDetail({
     }
   };
 
-  // 👇 حساب التقييم الفعلي بناءً على المراجعات الموجودة (المتوسط) 👇
   const actualRating = reviews.length > 0 
     ? (reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviews.length).toFixed(1) 
     : (book.avg_rating || book.rating || "0.0");
     
-  // استخراج عدد النسخ المتاحة بشكل آمن
-  const availableCopiesCount = book.copies_avail !== undefined ? book.copies_avail : (book.copies_available || 0);
-
   return(
     <div style={{padding:"24px",maxWidth:820,margin:"0 auto",animation:"fadeIn 0.4s ease"}}>
       
@@ -126,20 +134,22 @@ export default function BookDetail({
           <h1 style={{fontSize:23,fontWeight:700,color:th.text,lineHeight:1.25,marginBottom:7,fontFamily:"'Space Grotesk',sans-serif",letterSpacing:"-0.02em"}}>{book.title}</h1>
           <p style={{fontSize:13,color:th.sub,marginBottom:6}}>{isAr?"بقلم":"by"} <strong style={{color:th.text}}>{book.author}</strong></p>
           
-          {/* 👇 تعديل النجوم لتعرض التقييم الفعلي والنص ليعرض النسخ المتاحة 👇 */}
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexDirection:"row"}}>
             <span style={{display:"flex",alignItems:"center",gap:4,color:th.amber,fontSize:15,fontWeight:700}}>
               <Ic p={P.star} s={16} fill color={th.amber}/>
               {actualRating} <span style={{fontSize: 12, color: th.muted, fontWeight: 500}}>({reviews.length} {isAr ? "تقييم" : "reviews"})</span>
             </span>
-            <span style={{fontSize:13, color:th.prime, fontWeight:700, background: th.prime+"18", padding: "4px 10px", borderRadius: 8, border: `1px solid ${th.prime}44`}}>
-              {availableCopiesCount} {isAr ? "نسخة متاحة للطلب" : "Available Copies"}
+            
+            {/* 🔴 البادج الديناميكي 🔴 */}
+            <span style={{fontSize:13, color:availColor, fontWeight:700, background: availColor+"18", padding: "4px 10px", borderRadius: 8, border: `1px solid ${availColor}44`}}>
+              {availText}
             </span>
           </div>
           
           <p style={{fontSize:14,color:th.text,opacity:0.9,lineHeight:1.8,marginBottom:24,background:th.surface,border:`1px solid ${th.border}`,borderRadius:11,padding:"14px 16px",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{book.desc}</p>
           
           <div style={{display:"flex",gap:10,flexDirection:"row"}}>
+            {/* 🔴 زر الاستعارة (معطل أو شغال) 🔴 */}
             <button onClick={()=>{if(!btnDisabled)sendBorrowRequest(book);}} className="btn" disabled={btnDisabled} style={{flex:2,background:btnDisabled?(justFlashed?th.green+"44":th.dim):justFlashed?th.green:`linear-gradient(135deg,${th.prime},${th.primeD})`,borderRadius:11,padding:"13px",color:btnDisabled&&!justFlashed?"#777":"#fff",fontSize:13,fontWeight:700,fontFamily:"'Space Grotesk',sans-serif",cursor:btnDisabled&&!justFlashed?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all 0.3s"}}><Ic p={P.bookOpen} s={14}/>{btnLabel}</button>
             <button onClick={()=>toggleWishlist(book.id)} className="btn" style={{flex:1,background:inWl?th.red+"15":th.surface,border:`1px solid ${inWl?th.red+"44":th.border}`,borderRadius:11,padding:"13px",color:inWl?th.red:th.sub,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexDirection:"row"}}>
               <Ic p={P.heart} s={13} fill={inWl} color={inWl?th.red:th.sub}/>{inWl?t.inWishlist:t.addWishlist}

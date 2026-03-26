@@ -170,9 +170,6 @@ function useParticles(ref) {
   },[ref]);
 }
 
-/* ══════════════════════════════════════════════════════════
-   MAIN
-══════════════════════════════════════════════════════════ */
 export default function RegisterPage({ tn="dark", lang:initLang="ar", onBack, onSuccess, setLang:setLangOuter }) {
   const [lang, _setLang] = useState(initLang);
   const setLang = v => { _setLang(v); setLangOuter?.(v); };
@@ -181,7 +178,6 @@ export default function RegisterPage({ tn="dark", lang:initLang="ar", onBack, on
   const canvasRef = useRef(null);
   useParticles(canvasRef);
 
-    // ربط الكليات بأقسام الكتب الفعلية في قاعدة البيانات (لضمان دقة الـ AI)
   const FACULTIES_DATA = {
     "الهندسة (Engineering)": ["Computer Science", "Technology & Engineering", "Architecture", "Mathematics"],
     "العلوم (Science)": ["Science", "Mathematics", "Computers", "Physics"],
@@ -315,14 +311,11 @@ export default function RegisterPage({ tn="dark", lang:initLang="ar", onBack, on
           {/* University, Faculty, Dept, Year */}
           <Sep label={t.s2}/>
           
-          {/* خلينا الشبكة 2x2 عشان تستوعب الـ 4 حقول بشكل مريح */}
           <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16}}>
             
-            {/* الجامعة والفرقة (زي ما هما باستخدام Field) */}
             <Field fk="university" label={t.univ} icon={P.globe} ph={t.univPh} value={form.university} onChange={onChange("university")} error={errors.university} showPass={showPass} onTogglePass={()=>setShowPass(s=>!s)}/>
             <Field fk="year" label={t.yr} icon={P.cap} ph={t.yrPh} isSelect value={form.year} onChange={onChange("year")} error={errors.year} showPass={showPass} onTogglePass={()=>setShowPass(s=>!s)}/>
             
-            {/* حقل الكلية (قائمة منسدلة) */}
             <div style={{display: "flex", flexDirection: "column", gap: 6}}>
               <label style={{fontSize: 12, fontWeight: 700, color: th.sub, display: "flex", alignItems: "center", gap: 6}}>
                 <Ic p={P.book} s={14} color={th.prime}/> {t.fac || (isAr ? "الكلية" : "Faculty")}
@@ -337,7 +330,6 @@ export default function RegisterPage({ tn="dark", lang:initLang="ar", onBack, on
               </select>
             </div>
 
-            {/* حقل القسم (قائمة منسدلة تعتمد على الكلية) */}
             <div style={{display: "flex", flexDirection: "column", gap: 6}}>
               <label style={{fontSize: 12, fontWeight: 700, color: th.sub, display: "flex", alignItems: "center", gap: 6}}>
                 <Ic p={P.bookOpen} s={14} color={th.prime}/> {isAr ? "القسم" : "Department"}
@@ -345,7 +337,7 @@ export default function RegisterPage({ tn="dark", lang:initLang="ar", onBack, on
               <select 
                 value={form.dept} 
                 onChange={e => setForm({...form, dept: e.target.value})}
-                disabled={!form.faculty} // مقفول لو لسه مختارش كلية
+                disabled={!form.faculty}
                 style={{width: "100%", height: 42, background: form.faculty ? th.surface : th.card, border: `1px solid ${errors.dept ? th.red : th.border}`, borderRadius: 10, padding: "0 14px", color: form.dept ? th.text : th.muted, outline: "none", fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, opacity: form.faculty ? 1 : 0.6, transition: "all 0.2s", cursor: form.faculty ? "pointer" : "not-allowed"}}
               >
                 <option value="">{isAr ? "اختر القسم..." : "Select Department..."}</option>

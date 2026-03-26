@@ -15,9 +15,6 @@ export default function StudentHome({
 }) 
 
 {
-// ── تجهيز بيانات لوحة التحكم ──
-
-  // دالة أمان لتحويل التاريخ النصي لرقم نقدر نرتب بيه (بتعالج مشكلة الجافاسكريبت مع المسافات)
   const parseDate = (dateStr) => {
     if (!dateStr) return 0;
     const safeDate = String(dateStr).replace(' ', 'T'); 
@@ -25,13 +22,10 @@ export default function StudentHome({
     return isNaN(time) ? 0 : time;
   };
 
-  // 1. ترتيب السلايدر (Trending) تنازلياً حسب الاستعارات (الأعلى أولاً)
   const trendingBooks = [...BOOKS]
     .sort((a, b) => (Number(b.borrows) || 0) - (Number(a.borrows) || 0))
     .slice(0, 7);
-  
-  // 2. ترتيب الإضافات الحديثة (New Arrivals) تنازلياً حسب تاريخ الإنشاء (الأحدث أولاً)
-// 2. ترتيب الإضافات الحديثة (New Arrivals) 
+
   const newArrivals = [...BOOKS]
     .sort((a, b) => {
       const tB = parseDate(b.created_at);
@@ -42,7 +36,6 @@ export default function StudentHome({
   
   const nextDueLoan = activeLoans.slice().sort((a,b) => new Date(a.dueDateISO) - new Date(b.dueDateISO))[0];
 
-  // ── منطق تشغيل السلايدر (تم نقله هنا لتنظيف الملف الرئيسي) ──
   const [si, setSi] = useState(0);
   useEffect(() => {
     const len = trendingBooks.length || 1;
@@ -69,13 +62,23 @@ export default function StudentHome({
       <div style={{position:"relative", height:460, overflow:"hidden", background:`linear-gradient(180deg,#0b0e18,${th.bg})`, display: "flex", alignItems: "center", justifyContent: "center"}}>
         <div style={{position:"absolute", inset:0, pointerEvents:"none", background:`radial-gradient(ellipse at 50% 30%, ${trendingBooks[si % trendingBooks.length]?.cover?.[1]||th.red}44 0%, transparent 65%)`, filter:"blur(40px)", transition:"background 1s ease"}}/>
         
-        {/* نصوص الـ Hero على الشمال */}
         <div style={{position: "absolute", left: isAr ? "auto" : "8%", right: isAr ? "8%" : "auto", top: "50%", transform: "translateY(-50%)", zIndex: 10, maxWidth: 380, textAlign: isAr ? "right" : "left"}} dir={isAr ? "rtl" : "ltr"}>
             <span style={{fontSize: 13, fontWeight: 800, color: th.red, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, justifyContent: isAr ? "flex-start" : "flex-start"}}>
               <span style={{fontSize: 18}}>🔥</span> {isAr ? "الأكثر إقبالاً هذا الأسبوع" : "Trending This Week"}
             </span>
             <h1 style={{fontSize: 42, fontWeight: 800, color: "#fff", fontFamily: "'Space Grotesk',sans-serif", lineHeight: 1.15, marginBottom: 16}}>
-              {isAr ? "اكتشف ما يقرأه" : "Discover what"} <br/><span style={{background: `linear-gradient(135deg, ${th.amber}, ${th.red})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>{isAr ? "الجميع الآن." : "everyone is reading."}</span>
+              {isAr ? "اكتشف ما يقرأه" : "Discover what"} <br/>
+              <span style={{
+                backgroundImage: `linear-gradient(135deg, ${th.amber}, ${th.red})`,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                color: "transparent",
+                display: "inline-block",
+                lineHeight: "normal"
+              }}>
+                {isAr ? "الجميع الآن." : "everyone is reading."}
+              </span>
             </h1>
             <p style={{fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, marginBottom: 28}}>
               {isAr ? "انضم لزملائك واستكشف الكتب التي تتصدر قائمة الاستعارات في مكتبة الجامعة." : "Join your peers and explore the books topping the borrow charts in the university library."}
@@ -83,7 +86,6 @@ export default function StudentHome({
             <button onClick={() => nav("explore")} className="btn" style={{background: `linear-gradient(135deg, ${th.red}, #b91c1c)`, color: "#fff", padding: "12px 28px", borderRadius: 12, fontSize: 13, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", display: "inline-flex", alignItems: "center", gap: 8}}><Ic p={P.explore} s={16}/> {t.explore}</button>
         </div>
 
-        {/* السلايدر نفسه */}
         <div style={{position:"relative", height:"100%", width: "100%", display:"flex", alignItems:"center", justifyContent: isAr ? "flex-start" : "flex-end", paddingRight: isAr ? 0 : "8%", paddingLeft: isAr ? "8%" : 0}}>
           {trendingBooks.map((bk,i)=>{
             const pos = getPos(i);
@@ -108,7 +110,6 @@ export default function StudentHome({
           })}
         </div>
 
-        {/* أزرار ونقط السلايدر */}
         <button onClick={()=>setSi(a=>(a-1+trendingBooks.length)%trendingBooks.length)} className="btn" style={{position:"absolute", left:24, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"50%", width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", zIndex:20}}><Ic p={isAr?P.chevR:P.chevL} s={20}/></button>
         <button onClick={()=>setSi(a=>(a+1)%trendingBooks.length)} className="btn" style={{position:"absolute", right:24, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"50%", width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", zIndex:20}}><Ic p={isAr?P.chevL:P.chevR} s={20}/></button>
         <div style={{position:"absolute", bottom:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6, zIndex:20}}>

@@ -1,10 +1,3 @@
-"""
-BiblioTech — Main API Server
-=============================
-يجمع الـ AI Engine + MySQL في سيرفر واحد على port 8000
-تشغيل: uvicorn main:app --reload --port 8000
-"""
-
 import sys
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends, Query
@@ -18,16 +11,15 @@ import os, threading, urllib.request as _ur
 import aiomysql, bcrypt, jwt
 from dotenv import load_dotenv
 
-# ── 1. ربط مسار الـ AI Engine ─────────────────────────────
-sys.path.append(str(Path(__file__).resolve().parent.parent / "AI"))
-from AI_Engine import (
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
+from AI.AI_Engine import (
     get_smart_content_recommendations,
     get_similar_books,
     chatbot_semantic_search,
     generate_rag_response,
 )
 
-# ── 2. قراءة ملف .env (أصبح بجوار main.py) ────────────────
 _env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=_env_path)
 
@@ -159,8 +151,6 @@ async def startup():
             await conn.commit()
     print("✅ book_reviews + social tables initialized")
 
-    
-    # ── 3. تحديث مسارات الـ Routes ───────────────────────
     from routes.register_routes import make_register_router
     app.include_router(make_register_router(get_db))
     
@@ -183,7 +173,7 @@ async def get_db():
         async with conn.cursor(aiomysql.DictCursor) as cur:
             yield cur
 
-# ── JWT ────────────────────────────────────────────────────
+# JWT 
 def create_token(data: dict) -> str:
     payload = {**data, "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE)}
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
@@ -224,7 +214,7 @@ def require_super_admin(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only the super admin can perform this action")
     return user
 
-# ── Pydantic Models ────────────────────────────────────────
+# Pydantic Models 
 class StudentLogin(BaseModel):
     email: str
     password: str
@@ -258,7 +248,7 @@ class CreateUserBody(BaseModel):
     national_id: Optional[str] = None
     university:  Optional[str] = None
     faculty:     Optional[str] = None
-    department:  Optional[str] = None  # تمت إضافة القسم
+    department:  Optional[str] = None 
     year:        Optional[str] = None
     username:    Optional[str] = None
     phone:       Optional[str] = None
@@ -294,9 +284,7 @@ class BookReviewCreate(BaseModel):
     review_text: str
     rating: int
 
-# ══════════════════════════════════════════════════════════
 #  HEALTH
-# ══════════════════════════════════════════════════════════
 @app.get("/")
 async def health(db=Depends(get_db)):
     await db.execute("SELECT COUNT(*) as cnt FROM books")
@@ -307,9 +295,7 @@ async def health(db=Depends(get_db)):
 def health2():
     return {"status": "ok", "time": datetime.utcnow().isoformat()}
 
-# ══════════════════════════════════════════════════════════
 #  IMAGE PROXY — serves external book covers with cache
-# ══════════════════════════════════════════════════════════
 import httpx as _httpx
 from fastapi.responses import Response as _Response
 
@@ -415,9 +401,7 @@ async def get_all_books(
 
     return {"total": total, "books": [row_to_book(r) for r in rows]}
 
-# ══════════════════════════════════════════════════════════
 #  AI & RECOMMENDATIONS
-# ══════════════════════════════════════════════════════════
 @app.post("/api/recommendations")
 def recommendations(req: RecommendRequest):
     return get_smart_content_recommendations(
@@ -428,12 +412,10 @@ def recommendations(req: RecommendRequest):
 
 @app.get("/api/students/{student_id}/ai-recommendations")
 async def get_personalized_recommendations(student_id: int, db=Depends(get_db)):
-    # 1. جلب قسم الطالب
     await db.execute("SELECT department FROM students WHERE id=%s", (student_id,))
     student = await db.fetchone()
     department = student["department"] if student and student["department"] else ""
 
-    # 2. جلب سجل الطالب والمفضلة
     await db.execute("""
         SELECT b.title 
         FROM books b
@@ -445,14 +427,12 @@ async def get_personalized_recommendations(student_id: int, db=Depends(get_db)):
     user_history = await db.fetchall()
     liked_titles = [row["title"] for row in user_history]
 
-    # 3. بناء بروفايل التفضيلات
     user_prefs = {
         "favorite_categories": [department] if department else [],
         "liked_books": liked_titles
     }
 
     try:
-        # استدعاء المحرك الذكي وربطه بالبيانات
         recommendations = get_smart_content_recommendations(
             user_id=student_id, 
             user_department=department, 
@@ -497,9 +477,7 @@ def image_proxy(url: str = Query(...)):
     except:
         return Response(status_code=204)
 
-# ══════════════════════════════════════════════════════════
 #  AUTH & PROFILES
-# ══════════════════════════════════════════════════════════
 @app.post("/api/auth/student")
 async def student_login(body: StudentLogin, db=Depends(get_db)):
     await db.execute("SELECT * FROM students WHERE email = %s", (body.email,))
@@ -623,9 +601,7 @@ async def update_profile(body: UpdateProfile, user=Depends(get_current_user), db
         }
     }
 
-# ══════════════════════════════════════════════════════════
 #  BOOK REVIEWS
-# ══════════════════════════════════════════════════════════
 @app.get("/api/books/{book_id}/reviews")
 async def get_book_reviews(book_id: str, db=Depends(get_db)):
     await db.execute("""
@@ -658,10 +634,7 @@ async def add_book_review(book_id: str, body: BookReviewCreate, user=Depends(get
     )
     return {"message": "Review added successfully", "status": "success"}
 
-# ══════════════════════════════════════════════════════════
 #  BORROW REQUESTS & WISHLIST & NOTIFICATIONS
-# ══════════════════════════════════════════════════════════
-# 1. الدالة دي كانت ناقصة وهي اللي هتحل مشكلة (405 Method Not Allowed) في لوحة الأدمن 👇
 @app.get("/api/requests")
 async def get_all_requests(user=Depends(require_admin), db=Depends(get_db)):
     await db.execute("""
@@ -675,15 +648,39 @@ async def get_all_requests(user=Depends(require_admin), db=Depends(get_db)):
 
 @app.post("/api/requests")
 async def create_request(body: BorrowRequestCreate, user=Depends(require_student), db=Depends(get_db)):
-    await db.execute("SELECT id FROM borrow_requests WHERE student_id=%s AND book_id=%s AND status IN ('pending','approved')", (user["id"], body.book_id))
+    book_num = int(str(body.book_id).replace("DB", ""))
+    
+    await db.execute("SELECT copies_available FROM books WHERE id=%s", (book_num,))
+    book_record = await db.fetchone()
+    
+    if not book_record:
+        raise HTTPException(404, "الكتاب غير موجود في قاعدة البيانات")
+        
+    if book_record["copies_available"] <= 0:
+        raise HTTPException(400, "عذراً، لا توجد نسخ متاحة من هذا الكتاب حالياً لطلبها.")
+
+    await db.execute(
+        "SELECT id FROM borrow_requests WHERE student_id=%s AND book_id=%s AND status IN ('pending','approved')", 
+        (user["id"], body.book_id)
+    )
     if await db.fetchone():
         raise HTTPException(409, "Request already exists")
-    await db.execute("INSERT INTO borrow_requests (student_id,book_id,book_title,book_author,book_dept) VALUES (%s,%s,%s,%s,%s)", (user["id"], body.book_id, body.book_title, body.book_author, body.book_dept))
+        
+    await db.execute(
+        "INSERT INTO borrow_requests (student_id,book_id,book_title,book_author,book_dept) VALUES (%s,%s,%s,%s,%s)", 
+        (user["id"], body.book_id, body.book_title, body.book_author, body.book_dept)
+    )
     req_id = db.lastrowid
-    await db.execute("INSERT INTO notifications (student_id,type,title,message,book_id) VALUES (%s,'info','Request Sent',%s,%s)", (user["id"], f'Your borrow request for "{body.book_title}" has been sent.', body.book_id))
     
-    book_num = int(str(body.book_id).replace("DB", ""))
-    await db.execute("UPDATE books SET copies_available = GREATEST(0, copies_available - 1) WHERE id=%s", (book_num,))
+    await db.execute(
+        "INSERT INTO notifications (student_id,type,title,message,book_id) VALUES (%s,'info','Request Sent',%s,%s)", 
+        (user["id"], f'Your borrow request for "{body.book_title}" has been sent.', body.book_id)
+    )
+    
+    await db.execute(
+        "UPDATE books SET copies_available = GREATEST(0, copies_available - 1) WHERE id=%s", 
+        (book_num,)
+    )
     
     return {"id": req_id, "status": "pending"}
 @app.get("/api/requests/my")
@@ -710,7 +707,6 @@ async def reject_request(req_id: int, user=Depends(require_admin), db=Depends(ge
     await db.execute("UPDATE borrow_requests SET status='rejected',admin_id=%s WHERE id=%s", (user["id"], req_id))
     await db.execute("INSERT INTO notifications (student_id,type,title,message,book_id) VALUES (%s,'rejected','Request Not Approved',%s,%s)", (req["student_id"], f'Your request for "{req["book_title"]}" was not approved this time.', req["book_id"]))
     
-    # 👇 تم التصحيح لـ copies_available
     book_num = int(str(req["book_id"]).replace("DB", ""))
     await db.execute("UPDATE books SET copies_available = LEAST(copies_total, copies_available + 1) WHERE id=%s", (book_num,))
     
@@ -798,9 +794,7 @@ async def toggle_wishlist(body: WishlistToggle, user=Depends(require_student), d
     await db.execute("INSERT INTO wishlist (student_id,book_id) VALUES (%s,%s)", (user["id"], body.book_id))
     return {"action": "added"}
 
-# ══════════════════════════════════════════════════════════
 #  ADMIN (USERS & STATS)
-# ══════════════════════════════════════════════════════════
 @app.get("/api/students")
 async def get_students(user=Depends(require_admin), db=Depends(get_db)):
     await db.execute("""SELECT s.*, COUNT(CASE WHEN br.status='approved' AND br.returned_at IS NULL THEN 1 END) as active_loans, COUNT(CASE WHEN br.status='pending' THEN 1 END) as pending_requests FROM students s LEFT JOIN borrow_requests br ON br.student_id=s.id GROUP BY s.id ORDER BY s.created_at DESC""")
@@ -831,7 +825,6 @@ async def get_admins(user=Depends(require_admin), db=Depends(get_db)):
 async def admin_create_user(body: CreateUserBody, user=Depends(require_admin), db=Depends(get_db)):
     import re
     from datetime import date as _date
-    # ── 4. تعديل مسار الايميل ──────────────────────
     from services.email_service import send_welcome_email
 
     if not body.full_name.strip() or not body.email.strip() or not body.password: raise HTTPException(422, "All required fields must be filled")
@@ -868,7 +861,6 @@ async def admin_create_user(body: CreateUserBody, user=Depends(require_admin), d
 
 @app.put("/api/admin/update-user")
 async def admin_update_user(body: AdminUpdateUser, admin=Depends(require_admin), db=Depends(get_db)):
-    # ── 5. تعديل مسار الايميل ──────────────────────
     from services.email_service import send_profile_update_email, send_password_changed_email
     changed_fields = []
 

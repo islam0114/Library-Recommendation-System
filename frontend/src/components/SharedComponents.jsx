@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Ic, P } from "./Icons";
 
-// ─────────────────────────────────────────────────────────
 // 1. Notification Bell Component
-// ─────────────────────────────────────────────────────────
 export function NotifBell({ th, t, isAr, notifs, onMarkAll, onMarkOne }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   
   const unread = notifs.filter(n => !n.read).length;
   
-  // إغلاق القائمة عند الضغط خارجها
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
@@ -31,7 +28,6 @@ export function NotifBell({ th, t, isAr, notifs, onMarkAll, onMarkOne }) {
         <div style={{
           position: "absolute",
           top: 44,
-          // 👇 التعديل السحري لضبط الاتجاه ومنع خروج القائمة عن الشاشة 👇
           right: isAr ? "auto" : 0,
           left: isAr ? -280 : "auto",
           width: 320,
@@ -78,9 +74,7 @@ export function NotifBell({ th, t, isAr, notifs, onMarkAll, onMarkOne }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────
 // 2. Control Bar (Theme & Language Toggle)
-// ─────────────────────────────────────────────────────────
 export function CtrlBar({ th, t, tn, setTn, lang, setLang, isAr, onBack }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 7, flexDirection: "row" }}>

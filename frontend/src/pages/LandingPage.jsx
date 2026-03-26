@@ -1,7 +1,6 @@
 import React from "react";
 import { Ic, P } from "../components/Icons";
 
-// 1. الكومبوننت بتاع الكتب الطايرة في الخلفية
 const FloatBook = ({ colors, top, left, delay, flip }) => (
   <div style={{ position: "absolute", top, left, animation: `floatY 6s ease-in-out infinite`, animationDelay: `${delay}s`, transform: flip ? "scaleX(-1) rotate(10deg)" : "rotate(-10deg)", opacity: 0.8 }}>
     <div style={{ width: 80, height: 110, borderRadius: "4px 12px 12px 4px", background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`, boxShadow: "12px 16px 32px rgba(0,0,0,0.25), inset -2px 0 8px rgba(0,0,0,0.2)", position: "relative", borderLeft: "4px solid rgba(255,255,255,0.4)" }} >
@@ -10,7 +9,6 @@ const FloatBook = ({ colors, top, left, delay, flip }) => (
   </div>
 );
 
-// 2. الكومبوننت بتاع كروت الدخول (طالب / أدمن)
 const PortalCard = ({ th, title, desc, btn, accent, icon, onClick, isAr }) => (
   <div onClick={onClick} className="portal-card" style={{ background: th.surface, borderRadius: 24, padding: 32, cursor: "pointer", border: `1px solid ${th.border}`, transition: "all 0.3s cubic-bezier(0.34,1.2,0.64,1)", position: "relative", overflow: "hidden" }} >
     <div style={{ position: "absolute", top: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at top right, ${accent}22, transparent 70%)` }} />
@@ -25,7 +23,6 @@ const PortalCard = ({ th, title, desc, btn, accent, icon, onClick, isAr }) => (
   </div>
 );
 
-// 3. الصفحة الأساسية
 export default function Landing({ th, t, tn, setTn, lang, setLang, isAr, onStudent, onAdmin, CtrlBar }) {
   return (
     <div style={{ minHeight: "100vh", background: th.bg, color: th.text, fontFamily: "'Plus Jakarta Sans',sans-serif", position: "relative", overflow: "hidden", direction: "ltr", transition: "background 0.4s,color 0.4s" }}>
@@ -41,7 +38,6 @@ export default function Landing({ th, t, tn, setTn, lang, setLang, isAr, onStude
           <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", letterSpacing: "-0.02em", color: th.text }}>Biblio<span style={{ color: th.prime }}>Tech</span></span>
         </div>
         
-        {/* شريط التحكم (اللغة والثيم) مررناه كـ Props عشان نربطه بـ BiblioTechApp */}
         {CtrlBar && <CtrlBar th={th} t={t} tn={tn} setTn={setTn} lang={lang} setLang={setLang} isAr={isAr} />}
       </nav>
 

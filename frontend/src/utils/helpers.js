@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { P } from "../components/Icons"; // 👈 الاستدعاء ده مهم جداً عشان DEPT_ICONS متضربش
+import { P } from "../components/Icons";
 
 const API_BASE = "http://localhost:8000";
 
@@ -38,7 +38,6 @@ export function useBooks(AI_API_URL) {
   const [depts, setDepts] = useState(STATIC_DEPTS);
   const [booksLoading, setBooksLoading] = useState(true);
 
-  // دالة جلب الكتب المحدثة مع دعم الاستدعاء المتكرر
   const fetchBooks = useCallback(async () => {
     try {
       const res = await fetch(`${AI_API_URL}/api/books`);
@@ -50,7 +49,6 @@ export function useBooks(AI_API_URL) {
         setDepts(ud);
       }
     } catch (err) {
-      // backend offline — books stays empty
     } finally {
       setBooksLoading(false);
     }

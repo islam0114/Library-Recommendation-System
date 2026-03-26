@@ -82,7 +82,7 @@ export default function ParticleBackground() {
         width: "100vw",
         height: "100vh",
         pointerEvents: "none",
-        zIndex: 0, // يجب أن يكون 0 هنا لأننا نعطيه الحاوية الخاصة به
+        zIndex: 0,
         opacity: 0.6
       }}
     />

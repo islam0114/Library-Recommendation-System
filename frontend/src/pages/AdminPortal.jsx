@@ -170,7 +170,6 @@ export default function AdminPortal({ th, t, isAr, controls, tn, setTn, lang, se
         refreshAll();
         pollRef.current = setInterval(() => {
             refreshAll();
-            // تحديث صامت للكتب لضمان مزامنة عدد النسخ
             fetchBooks();
         }, 10000);
     }

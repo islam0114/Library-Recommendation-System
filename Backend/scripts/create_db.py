@@ -8,14 +8,19 @@ load_dotenv(dotenv_path="../.env")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", 3306))
 DB_USER = os.getenv("DB_USER", "root")
-DB_PASS = os.getenv("DB_PASS", "root") # تأكد من الباسورد
+DB_PASS = os.getenv("DB_PASS", "root")
 DB_NAME = os.getenv("DB_NAME", "bibliotech")
 
 async def create_database():
-    print(f"🚀 Fixing Database Schema for '{DB_NAME}'...")
+    print(f"🚀 Fixing Database Schema for '{DB_NAME}' on Localhost...")
     try:
         pool = await aiomysql.create_pool(
-            host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASS, db=DB_NAME, autocommit=True
+            host=DB_HOST, 
+            port=DB_PORT, 
+            user=DB_USER, 
+            password=DB_PASS, 
+            db=DB_NAME, 
+            autocommit=True
         )
         async with pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -29,7 +34,7 @@ async def create_database():
                 for table in tables:
                     await cur.execute(f"DROP TABLE IF EXISTS {table}")
 
-                print("Creating corrected tables...")
+                print("Creating tables for Localhost...")
 
                 # 1. Books
                 await cur.execute("""
@@ -96,7 +101,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 5. Notifications (تم تعديل book_id ليقبل نصوص)
+                # 5. Notifications
                 await cur.execute("""
                 CREATE TABLE notifications (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -110,7 +115,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 6. Wishlist (تم تعديل book_id ليقبل نصوص)
+                # 6. Wishlist
                 await cur.execute("""
                 CREATE TABLE wishlist (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -121,7 +126,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 7. Borrow Requests (تم تعديل book_id ليقبل نصوص)
+                # 7. Borrow Requests
                 await cur.execute("""
                 CREATE TABLE borrow_requests (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,7 +156,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 9. Friendships (إضافة updated_at المطلوبة)
+                # 9. Friendships
                 await cur.execute("""
                 CREATE TABLE friendships (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -164,7 +169,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 10. Communities (إضافة created_by و cover_color)
+                # 10. Communities
                 await cur.execute("""
                 CREATE TABLE communities (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -201,7 +206,7 @@ async def create_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """)
 
-                # 13. Book Reviews (تم تعديل book_id ليقبل نصوص)
+                # 13. Book Reviews
                 await cur.execute("""
                 CREATE TABLE book_reviews (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -214,7 +219,7 @@ async def create_database():
                 """)
 
                 await cur.execute("SET FOREIGN_KEY_CHECKS = 1;")
-                print("✅ Schema updated successfully! All tables match main.py and social_routes perfectly.")
+                print("✅ Schema updated successfully! Local database is ready.")
 
         pool.close()
         await pool.wait_closed()
